@@ -31,7 +31,6 @@ class UploadFileForm(FlaskForm):
     file = FileField("File",validators=[InputRequired()])
     submit = SubmitField("Run")
 
-
 def generate_frames(path_x = ''):
     yolo_output = video_detection(path_x)
     for detection_ in yolo_output:
