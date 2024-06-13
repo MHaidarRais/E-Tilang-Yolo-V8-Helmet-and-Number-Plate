@@ -18,11 +18,18 @@ def start_detection():
     video_detection(int(camera))
     return "Detection started"
 
-def detect_and_print_text(image, detections, threshold=0.2):
+def detect_and_save_text(image_path, detections, threshold=0.2):
+    detected_texts = []
     for bbox, text, score in detections:
         if score > threshold:
-            # Print the detected text to the terminal
-            print(f"Detected text: {text}")
+            detected_texts.append(text)
+    
+    if detected_texts:
+        # Create a .txt file with the same name as the image
+        txt_filename = os.path.splitext(image_path)[0] + ".txt"
+        with open(txt_filename, 'w') as file:
+            for text in detected_texts:
+                file.write(f"{text}\n")
 
 def video_detection(camera_index):
     cap = cv2.VideoCapture(camera_index)
@@ -33,7 +40,8 @@ def video_detection(camera_index):
     if not os.path.exists(saveimgdir):
         os.mkdir(saveimgdir)
 
-    model = YOLO("D:\\Code And Stuff\\TA CODE THINGY\\WEBAPP-DETECTION\\best.pt")
+    # model = YOLO("D:\\Code And Stuff\\TA CODE THINGY\\WEBAPP-DETECTION\\best.pt")
+    model = YOLO("D:\\Code And Stuff\\TA CODE THINGY\\WEBAPP-DETECTION\\bestn.pt")
     classNames = ['number plate', 'rider', 'with helmet', 'without helmet']
     
     reader = easyocr.Reader(['en'], gpu=False)
@@ -78,7 +86,7 @@ def video_detection(camera_index):
                         cv2.putText(frame, label, (x1, y1 - 2), 0, 1, [255, 255, 255], thickness=1, lineType=cv2.LINE_AA)
                         cv2.imwrite(os.path.join(saveimgdir, filename), img=frame)
 
-                        #Path to the latest saved image file
+                        # Path to the latest saved image file
                         image_path = os.path.join(saveimgdir, filename)
 
                         # Read the image
@@ -92,8 +100,8 @@ def video_detection(camera_index):
                         text_detections = reader.readtext(img)
                         threshold = 0.2
 
-                        # Detect and print text
-                        detect_and_print_text(img, text_detections, threshold)
+                        # Detect and save text
+                        detect_and_save_text(image_path, text_detections, threshold)
 
         yield img
 
