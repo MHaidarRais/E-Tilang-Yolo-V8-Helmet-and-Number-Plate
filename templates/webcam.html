@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Webcam | E-Tilang</title>
+    <style>
+      body {
+        color: rgb(255, 255, 255);
+        background-size: cover; /* Mengatur gambar agar menutupi seluruh latar belakang /
+        background-repeat: no-repeat;
+        margin: 0px;
+        / font-family: 'Times New Roman', Times, serif; */
+        font-family: 'Arial';
+        text-align: justify;
+        padding: 0px;
+      }
+      header.feature-box.top {
+        background-color: black;
+        height: 60px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        text-align: center;
+      }
+      header.feature-box.second {
+        background-color: blue;
+        height: 50px;
+        text-align: center;
+        margin-top: -25px;
+      }
+      .features {
+        background-color: black;
+        width: 900px;
+        height: 700px;
+        border-radius: 35px;
+        object-fit: contain;
+        margin: 20px;
+      }
+      section.col-sm {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 200vb;
+        height: 80vh;
+        border-radius: 15px;
+        object-fit: contain;
+      }
+      img {
+        width: 800px;
+        height: 600px;
+        border-radius: 35px;
+        object-fit: contain;
+        margin: 40px;
+      }
+
+      .new {
+        color: black;
+        margin: 0px;
+        padding: 10px;
+        background-color: green;
+        margin: 0px;
+        margin-top: -10px;
+      }
+
+      .back-button {
+            float: left;
+            margin-left: 20px;
+            color: white;
+            font-family: 'Arial';
+        }
+
+    </style>
+  </head>
+  <body>
+    <header class="feature-box top">
+        <a href="/home" class="back-button">&larr; Back</a>
+        <h1><strong>Helmet Detection Using Webcam</strong></h1>
+    </header>
+    <section class="col-sm">
+      <img src="{{ url_for('webapp') }}" alt="Web Cam Not Detected" />
+    </section>
+</body>
+</html>
