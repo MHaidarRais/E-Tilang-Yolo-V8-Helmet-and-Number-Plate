@@ -2,3 +2,5 @@
 __pycache__
 ViolationCaptured
 share
+static/files
+violation.json

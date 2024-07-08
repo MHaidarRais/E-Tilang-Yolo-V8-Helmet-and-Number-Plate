@@ -8,22 +8,22 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Video | Smart Parking</title>
   <style>
-body {
-  color: rgb(255, 255, 255);
-  margin: 0px;
-  padding: 0px;
-  background-size: cover; /* Mengatur gambar agar menutupi seluruh latar belakang */
-  background-repeat: no-repeat;
-  font-family: 'Arial', Helvetica, sans-serif;
-}
+    body {
+      color: rgb(255, 255, 255);
+      margin: 0px;
+      padding: 0px;
+      background-size: cover;
+      background-repeat: no-repeat;
+      font-family: 'Arial', Helvetica, sans-serif;
+    }
 
-      header.feature-box.top {
-        background-color: black;
-        height: 60px;
-        padding-top: 10px;
-        padding-bottom: 10px;
-        text-align: center;
-      }
+    header.feature-box.top {
+      background-color: black;
+      height: 60px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      text-align: center;
+    }
 
     header.feature-box.second {
       color: rgb(0, 0, 0);
@@ -71,12 +71,31 @@ body {
     }
 
     .back-button {
-            float: left;
-            margin-left: 20px;
-            color: white;
-            font-family: 'Arial';
-        }
+      float: left;
+      margin-left: 20px;
+      color: white;
+      font-family: 'Arial';
+    }
+
+    .progress {
+      width: 80%;
+      background-color: #f3f3f3;
+      margin: 20px auto;
+      border-radius: 25px;
+    }
+
+    .progress-bar {
+      width: 0;
+      height: 30px;
+      background-color: #4caf50;
+      text-align: center;
+      line-height: 30px;
+      color: white;
+      border-radius: 25px;
+    }
   </style>
+  <script src="https://cdn.socket.io/4.1.2/socket.io.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 
 <body>
@@ -87,38 +106,30 @@ body {
   <section>
     <div class="new">
       <form method='POST' enctype="multipart/form-data" style="text-align: center;">
-        {{form.hidden_tag()}}
-        {{form.file(class_="custom-file-input", style="margin: auto;")}}
-    
-        <div">
-          <button type="submit" name="favorite" value="x" class="btnCustom">
-            Submit
-          </button>
+        {{ form.hidden_tag() }}
+        {{ form.file(class_="custom-file-input", style="margin: auto;") }}
+        <div>
+          <button type="submit" name="favorite" value="x" class="btnCustom">Submit</button>
         </div>
       </form>
     </div>
-    <!-- <div class="new">
-      <form method='POST' enctype="multipart/form-data"
-        style="align-content: center; text-align: center;display: flex;">
-        {{form.hidden_tag()}}
-        {{form.file(class_="custom-file-input")}}
-
-        <div>
-          <button type="submit" name="favorite" value="x" class="btnCustom">
-            Submit
-          </button>
-        </div> -->
-      </form>
-    </div>
-
-    </div>
   </section>
-
-  <section class="col-sm ">
+  <section class="col-sm">
     <img src="{{ url_for('video') }}" alt="Upload video">
-
   </section>
 
+  <div class="progress">
+    <div class="progress-bar" id="progress-bar">0%</div>
+  </div>
+
+  <script>
+    $(document).ready(function () {
+      var socket = io.connect('http://' + document.domain + ':' + location.port);
+      socket.on('progress', function (data) {
+        $('#progress-bar').css('width', data.progress + '%').text(data.progress + '%');
+      });
+    });
+  </script>
 </body>
 
 </html>

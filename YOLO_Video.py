@@ -5,8 +5,8 @@ import cv2
 import math
 import os
 import easyocr
-import folium
 import requests
+import json
 
 app = Flask(__name__)
 
@@ -27,51 +27,44 @@ def detect_and_save_text(image_path, detections, threshold=0.2):
             detected_texts.append(text)
     
     if detected_texts:
-        # Create a .txt file with the same name as the image
         txt_filename = os.path.splitext(image_path)[0] + ".txt"
         with open(txt_filename, 'w') as file:
             for text in detected_texts:
                 file.write(f"{text}\n")
 
 def locationCoordinates():
-	try:
-		response = requests.get('https://ipinfo.io')
-		data = response.json()
-		loc = data['loc'].split(',')
-		lat, long = float(loc[0]), float(loc[1])
-		city = data.get('city', 'Unknown')
-		state = data.get('region', 'Unknown')
-		return lat, long, city, state
-		# return lat, long
-	except:
-		# Displaying ther error message
-		print("Internet Not available")
-		# closing the program
-		exit()
-		return False
+    try:
+        response = requests.get('https://ipinfo.io')
+        data = response.json()
+        loc = data['loc'].split(',')
+        lat, long = float(loc[0]), float(loc[1])
+        city = data.get('city', 'Unknown')
+        state = data.get('region', 'Unknown')
+        return lat, long, city, state
+    except:
+        print("Internet Not available")
+        exit()
+        return False
 
-
-# this method will fetch our coordinates and create a html file
-# of the map
-# def gps_locator():
-
-# 	obj = folium.Map(location=[0, 0], zoom_start=2)
-
-# 	try:
-# 		lat, long, city, state = locationCoordinates()
-# 		print("You Are in {},{}".format(city, state))
-# 		print("Your latitude = {} and longitude = {}".format(lat, long))
-# 		folium.Marker([lat, long], popup='Current Location').add_to(obj)
-
-# 		fileName = "C:/screengfg/Location" + \
-# 			str(datetime.date.today()) + ".html"
-
-# 		obj.save(fileName)
-
-# 		return fileName
-
-# 	except:
-# 		return False
+def save_violation_data(image_path, date_info, time_info, location, latitude, longitude):
+    violation_data = {
+        "image": image_path,
+        "date": date_info,
+        "time": time_info,
+        "location": location,
+        "latitude": latitude,
+        "longitude": longitude
+    }
+    
+    if os.path.exists("violation.json"):
+        with open("violation.json", "r") as file:
+            data = json.load(file)
+        data.append(violation_data)
+    else:
+        data = [violation_data]
+    
+    with open("violation.json", "w") as file:
+        json.dump(data, file, indent=4)
 
 def video_detection(camera_index):
     cap = cv2.VideoCapture(camera_index)
@@ -82,7 +75,6 @@ def video_detection(camera_index):
     if not os.path.exists(saveimgdir):
         os.mkdir(saveimgdir)
 
-    # model = YOLO("D:\\Code And Stuff\\TA CODE THINGY\\WEBAPP-DETECTION\\best.pt")
     model = YOLO("D:\\Code And Stuff\\TA CODE THINGY\\WEBAPP-DETECTION\\YOLOV8N-V5.pt")
     classNames = ['number plate', 'rider', 'with helmet', 'without helmet']
     
@@ -117,28 +109,34 @@ def video_detection(camera_index):
                     cv2.putText(img, label, (x1, y1 - 2), 0, 1, [255, 255, 255], thickness=1, lineType=cv2.LINE_AA)
                     
                     if class_name == "without helmet":
-                        # Date format naming system
                         now = datetime.now()
                         lat, long, city, state = locationCoordinates()
                         current_time = now.strftime("%d-%m-%Y %H-%M-%S")
                         filename = f"Violation - {current_time}-{city,state}-{lat,long}.jpg"
                         
-                        # print("You Are in {},{}".format(city, state))
-                        # print("Your latitude = {} and longitude = {}".format(lat, long))
+                        date_info = {
+                            "day": now.day,
+                            "month": now.month,
+                            "year": now.year
+                        }
+                        
+                        time_info = {
+                            "hour": now.hour,
+                            "minute": now.minute,
+                            "second": now.second
+                        }
 
-                        # Bounding box inside the saved file
                         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 3)
                         cv2.rectangle(frame, (x1, y1), c2, color, -1, cv2.LINE_AA)
                         cv2.putText(frame, label, (x1, y1 - 2), 0, 1, [255, 255, 255], thickness=1, lineType=cv2.LINE_AA)
                         cv2.imwrite(os.path.join(saveimgdir, filename), img=frame)
 
-                        # Path to the latest saved image file
                         image_path = os.path.join(saveimgdir, filename)
 
-                        # Read the image
+                        save_violation_data(image_path, date_info, time_info, f"{city}, {state}", lat, long)
+
                         img = cv2.imread(image_path)
 
-                        # Check if the image was successfully loaded
                         if img is None:
                             raise ValueError("Error loading the image. Please check the file path.") 
                         
