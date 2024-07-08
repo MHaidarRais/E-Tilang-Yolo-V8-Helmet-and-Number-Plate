@@ -5,6 +5,8 @@ import cv2
 import math
 import os
 import easyocr
+import folium
+import requests
 
 app = Flask(__name__)
 
@@ -30,6 +32,46 @@ def detect_and_save_text(image_path, detections, threshold=0.2):
         with open(txt_filename, 'w') as file:
             for text in detected_texts:
                 file.write(f"{text}\n")
+
+def locationCoordinates():
+	try:
+		response = requests.get('https://ipinfo.io')
+		data = response.json()
+		loc = data['loc'].split(',')
+		lat, long = float(loc[0]), float(loc[1])
+		city = data.get('city', 'Unknown')
+		state = data.get('region', 'Unknown')
+		return lat, long, city, state
+		# return lat, long
+	except:
+		# Displaying ther error message
+		print("Internet Not available")
+		# closing the program
+		exit()
+		return False
+
+
+# this method will fetch our coordinates and create a html file
+# of the map
+# def gps_locator():
+
+# 	obj = folium.Map(location=[0, 0], zoom_start=2)
+
+# 	try:
+# 		lat, long, city, state = locationCoordinates()
+# 		print("You Are in {},{}".format(city, state))
+# 		print("Your latitude = {} and longitude = {}".format(lat, long))
+# 		folium.Marker([lat, long], popup='Current Location').add_to(obj)
+
+# 		fileName = "C:/screengfg/Location" + \
+# 			str(datetime.date.today()) + ".html"
+
+# 		obj.save(fileName)
+
+# 		return fileName
+
+# 	except:
+# 		return False
 
 def video_detection(camera_index):
     cap = cv2.VideoCapture(camera_index)
@@ -77,8 +119,12 @@ def video_detection(camera_index):
                     if class_name == "without helmet":
                         # Date format naming system
                         now = datetime.now()
+                        lat, long, city, state = locationCoordinates()
                         current_time = now.strftime("%d-%m-%Y %H-%M-%S")
-                        filename = f"Violation - {current_time}.jpg"
+                        filename = f"Violation - {current_time}-{city,state}-{lat,long}.jpg"
+                        
+                        # print("You Are in {},{}".format(city, state))
+                        # print("Your latitude = {} and longitude = {}".format(lat, long))
 
                         # Bounding box inside the saved file
                         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 3)
@@ -95,7 +141,7 @@ def video_detection(camera_index):
                         # Check if the image was successfully loaded
                         if img is None:
                             raise ValueError("Error loading the image. Please check the file path.") 
-
+                        
                         # Perform text detection
                         # text_detections = reader.readtext(img)
                         # threshold = 0.2
