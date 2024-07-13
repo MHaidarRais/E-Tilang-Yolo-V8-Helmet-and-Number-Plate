@@ -75,10 +75,10 @@ def video_detection(camera_index):
     if not os.path.exists(saveimgdir):
         os.mkdir(saveimgdir)
 
-    model = YOLO("D:\\Code And Stuff\\TA CODE THINGY\\WEBAPP-DETECTION\\YOLOV8N-V5.pt")
+    model = YOLO("D:\\Code And Stuff\\TA CODE THINGY\\WEBAPP-DETECTION\\YOLOV8N-V9.pt")
     classNames = ['number plate', 'rider', 'with helmet', 'without helmet']
     
-    reader = easyocr.Reader(['en'], gpu=False)
+    # reader = easyocr.Reader(['en'], gpu=False)
     
     while True:
         success, img = cap.read()
@@ -129,6 +129,7 @@ def video_detection(camera_index):
                         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 3)
                         cv2.rectangle(frame, (x1, y1), c2, color, -1, cv2.LINE_AA)
                         cv2.putText(frame, label, (x1, y1 - 2), 0, 1, [255, 255, 255], thickness=1, lineType=cv2.LINE_AA)
+                        
                         cv2.imwrite(os.path.join(saveimgdir, filename), img=frame)
 
                         image_path = os.path.join(saveimgdir, filename)
@@ -141,11 +142,11 @@ def video_detection(camera_index):
                             raise ValueError("Error loading the image. Please check the file path.") 
                         
                         # Perform text detection
-                        # text_detections = reader.readtext(img)
-                        # threshold = 0.2
+                        text_detections = reader.readtext(img)
+                        threshold = 0.2
 
-                        # # Detect and save text
-                        # detect_and_save_text(image_path, text_detections, threshold)
+                        # Detect and save text
+                        detect_and_save_text(image_path, text_detections, threshold)
 
         yield img
 

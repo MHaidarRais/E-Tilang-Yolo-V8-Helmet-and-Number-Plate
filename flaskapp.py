@@ -70,7 +70,7 @@ def video_detection(path_x):
     if not os.path.exists(saveimgdir):
         os.mkdir(saveimgdir)
 
-    model = YOLO("D:\\Code And Stuff\\TA CODE THINGY\\WEBAPP-DETECTION\\YOLOV8N-V5.pt")
+    model = YOLO("D:\\Code And Stuff\\TA CODE THINGY\\WEBAPP-DETECTION\\YOLOV8N-V9.pt")
     classNames = ['number plate', 'rider', 'with helmet', 'without helmet']
     
     reader = easyocr.Reader(['en'], gpu=False)
