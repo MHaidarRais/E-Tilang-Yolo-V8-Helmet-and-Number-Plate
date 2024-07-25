@@ -66,6 +66,16 @@ def save_violation_data(image_path, date_info, time_info, location, latitude, lo
     with open("violation.json", "w") as file:
         json.dump(data, file, indent=4)
 
+def is_inside_or_near(bbox1, bbox2, margin=20):
+    # bbox format: [x1, y1, x2, y2]
+    x1_1, y1_1, x2_1, y2_1 = bbox1
+    x1_2, y1_2, x2_2, y2_2 = bbox2
+    
+    if (x1_1 - margin < x1_2 < x2_1 + margin or x1_1 - margin < x2_2 < x2_1 + margin) and \
+       (y1_1 - margin < y1_2 < y2_1 + margin or y1_1 - margin < y2_2 < y2_1 + margin):
+        return True
+    return False
+
 def video_detection(camera_index):
     cap = cv2.VideoCapture(camera_index)
     frame_width = int(cap.get(3))
@@ -78,7 +88,7 @@ def video_detection(camera_index):
     model = YOLO("D:\\Code And Stuff\\TA CODE THINGY\\WEBAPP-DETECTION\\YOLOV8N-V9.pt")
     classNames = ['number plate', 'rider', 'with helmet', 'without helmet']
     
-    # reader = easyocr.Reader(['en'], gpu=False)
+    reader = easyocr.Reader(['en'], gpu=False)
     
     while True:
         success, img = cap.read()
@@ -86,6 +96,7 @@ def video_detection(camera_index):
             break
         
         results = model(img, stream=True)
+        rider_bbox = None
         for r in results:
             boxes = r.boxes
             for box in boxes:
@@ -108,45 +119,51 @@ def video_detection(camera_index):
                     cv2.rectangle(img, (x1, y1), c2, color, -1, cv2.LINE_AA)
                     cv2.putText(img, label, (x1, y1 - 2), 0, 1, [255, 255, 255], thickness=1, lineType=cv2.LINE_AA)
                     
-                    if class_name == "without helmet":
-                        now = datetime.now()
-                        lat, long, city, state = locationCoordinates()
-                        current_time = now.strftime("%d-%m-%Y %H-%M-%S")
-                        filename = f"Violation - {current_time}-{city,state}-{lat,long}.jpg"
+                    if class_name == "rider":
+                        rider_bbox = [x1, y1, x2, y2]
+                    
+                    if class_name == "without helmet" and rider_bbox:
+                        without_helmet_bbox = [x1, y1, x2, y2]
                         
-                        date_info = {
-                            "day": now.day,
-                            "month": now.month,
-                            "year": now.year
-                        }
-                        
-                        time_info = {
-                            "hour": now.hour,
-                            "minute": now.minute,
-                            "second": now.second
-                        }
+                        if is_inside_or_near(rider_bbox, without_helmet_bbox):
+                            now = datetime.now()
+                            lat, long, city, state = locationCoordinates()
+                            current_time = now.strftime("%d-%m-%Y %H-%M-%S")
+                            filename = f"Violation - {current_time}-{city,state}-{lat,long}.jpg"
+                            
+                            date_info = {
+                                "day": now.day,
+                                "month": now.month,
+                                "year": now.year
+                            }
+                            
+                            time_info = {
+                                "hour": now.hour,
+                                "minute": now.minute,
+                                "second": now.second
+                            }
 
-                        cv2.rectangle(frame, (x1, y1), (x2, y2), color, 3)
-                        cv2.rectangle(frame, (x1, y1), c2, color, -1, cv2.LINE_AA)
-                        cv2.putText(frame, label, (x1, y1 - 2), 0, 1, [255, 255, 255], thickness=1, lineType=cv2.LINE_AA)
-                        
-                        cv2.imwrite(os.path.join(saveimgdir, filename), img=frame)
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 3)
+                            cv2.rectangle(frame, (x1, y1), c2, color, -1, cv2.LINE_AA)
+                            cv2.putText(frame, label, (x1, y1 - 2), 0, 1, [255, 255, 255], thickness=1, lineType=cv2.LINE_AA)
+                            
+                            cv2.imwrite(os.path.join(saveimgdir, filename), img=frame)
 
-                        image_path = os.path.join(saveimgdir, filename)
+                            image_path = os.path.join(saveimgdir, filename)
 
-                        save_violation_data(image_path, date_info, time_info, f"{city}, {state}", lat, long)
+                            save_violation_data(image_path, date_info, time_info, f"{city}, {state}", lat, long)
 
-                        img = cv2.imread(image_path)
+                            img = cv2.imread(image_path)
 
-                        if img is None:
-                            raise ValueError("Error loading the image. Please check the file path.") 
-                        
-                        # Perform text detection
-                        text_detections = reader.readtext(img)
-                        threshold = 0.2
+                            if img is None:
+                                raise ValueError("Error loading the image. Please check the file path.") 
+                            
+                            # Perform text detection
+                            text_detections = reader.readtext(img)
+                            threshold = 0.2
 
-                        # Detect and save text
-                        detect_and_save_text(image_path, text_detections, threshold)
+                            # Detect and save text
+                            detect_and_save_text(image_path, text_detections, threshold)
 
         yield img
 
