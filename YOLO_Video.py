@@ -7,6 +7,7 @@ import os
 import easyocr
 import requests
 import json
+from firebaselib import db, TaskList, TaskListById, Task
 
 app = Flask(__name__)
 
@@ -45,6 +46,21 @@ def locationCoordinates():
         print("Internet Not available")
         exit()
         return False
+
+def save_violation_data_to_firestore(date_info, time_info, location, latitude, longitude):
+    task = Task(
+        day=date_info['day'],
+        month=date_info['month'],
+        year=date_info['year'],
+        hour=time_info['hour'],
+        minute=time_info['minute'],
+        second=time_info['second'],
+        city=location.split(", ")[0],
+        state=location.split(", ")[1],
+        lat=latitude,
+        long=longitude
+    )
+    db.collection('ETLE').add(task.to_dict())
 
 def save_violation_data(image_path, date_info, time_info, location, latitude, longitude):
     violation_data = {
@@ -151,19 +167,20 @@ def video_detection(camera_index):
 
                             image_path = os.path.join(saveimgdir, filename)
 
-                            save_violation_data(image_path, date_info, time_info, f"{city}, {state}", lat, long)
+                            # save_violation_data_to_firestore(image_path, date_info, time_info, f"{city}, {state}", lat, long)
+                            save_violation_data_to_firestore(date_info, time_info, f"{city}, {state}", lat, long)
 
                             img = cv2.imread(image_path)
 
                             if img is None:
                                 raise ValueError("Error loading the image. Please check the file path.") 
                             
-                            # Perform text detection
-                            text_detections = reader.readtext(img)
-                            threshold = 0.2
+                            # # Perform text detection
+                            # text_detections = reader.readtext(img)
+                            # threshold = 0.2
 
                             # Detect and save text
-                            detect_and_save_text(image_path, text_detections, threshold)
+                            # detect_and_save_text(image_path, text_detections, threshold)
 
         yield img
 

@@ -12,6 +12,7 @@ import math
 import easyocr
 from ultralytics import YOLO
 from flask_socketio import SocketIO, emit
+from firebaselib import db, TaskList, TaskListById, Task
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'ayush'
@@ -39,25 +40,20 @@ def locationCoordinates():
         print("Error fetching location:", str(e))
         return None, None, None, None
 
-def save_violation_data(image_path, date_info, time_info, location, latitude, longitude):
-    violation_data = {
-        "image": image_path,
-        "date": date_info,
-        "time": time_info,
-        "location": location,
-        "latitude": latitude,
-        "longitude": longitude
-    }
-    
-    if os.path.exists("violation.json"):
-        with open("violation.json", "r") as file:
-            data = json.load(file)
-        data.append(violation_data)
-    else:
-        data = [violation_data]
-    
-    with open("violation.json", "w") as file:
-        json.dump(data, file, indent=4)
+def save_violation_data_to_firestore(date_info, time_info, location, latitude, longitude):
+    task = Task(
+        day=date_info['day'],
+        month=date_info['month'],
+        year=date_info['year'],
+        hour=time_info['hour'],
+        minute=time_info['minute'],
+        second=time_info['second'],
+        city=location.split(", ")[0],
+        state=location.split(", ")[1],
+        lat=latitude,
+        long=longitude
+    )
+    db.collection('ETLE').add(task.to_dict())
 
 def is_inside_or_near(bbox1, bbox2, margin=20):
     # bbox format: [x1, y1, x2, y2]
@@ -158,20 +154,20 @@ def video_detection(path_x):
 
                             image_path = os.path.join(saveimgdir, filename)
 
-                            save_violation_data(image_path, date_info, time_info, f"{city}, {state}", lat, long)
+                            # save_violation_data_to_firestore(image_path, date_info, time_info, f"{city}, {state}", lat, long)
+                            save_violation_data_to_firestore(date_info, time_info, f"{city}, {state}", lat, long)
 
                             img = cv2.imread(image_path)
 
                             if img is None:
                                 raise ValueError("Error loading the image. Please check the file path.") 
                             
-                            # Perform text detection
-                            text_detections = reader.readtext(img)
-                            threshold = 0.2
+                            # # Perform text detection
+                            # text_detections = reader.readtext(img)
+                            # threshold = 0.2
 
                             # Detect and save text
-                            detect_and_save_text(image_path, text_detections, threshold)
-
+                            # detect_and_save_text(image_path, text_detections, threshold)
 
         frame_count += 1
         progress = int((frame_count / total_frames) * 100)
@@ -234,24 +230,19 @@ def progress():
 
 @app.route('/violations')
 def violations():
-    # Read violations from violation.json
-    with open('violation.json', 'r') as file:
-        violations = json.load(file)
+    violations_ref = db.collection('ETLE')
+    violations = [violation.to_dict() for violation in violations_ref.stream()]
     return render_template('violationList.html', violations=violations)
 
 @app.route('/violation/<int:index>')
 def violation_details(index):
-    try:
-        with open('violation.json', 'r') as file:
-            violations_data = json.load(file)
-        
-        if index < 0 or index >= len(violations_data):
-            return "Invalid violation index."
-        
-        violation = violations_data[index]
-    except FileNotFoundError:
-        violation = None
+    violations_ref = db.collection('ETLE')
+    violations = [violation.to_dict() for violation in violations_ref.stream()]
     
+    if index < 0 or index >= len(violations):
+        return "Invalid violation index."
+    
+    violation = violations[index]
     return render_template('violation_details.html', violation=violation)
 
 @socketio.on('connect')
