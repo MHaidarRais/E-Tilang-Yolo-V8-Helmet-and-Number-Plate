@@ -145,7 +145,7 @@ def video_detection(camera_index):
                             now = datetime.now()
                             lat, long, city, state = locationCoordinates()
                             current_time = now.strftime("%d-%m-%Y %H-%M-%S")
-                            filename = f"Violation - {current_time}-{city,state}-{lat,long}.jpg"
+                            filename = f"{current_time}.jpg"
                             
                             date_info = {
                                 "day": now.day,

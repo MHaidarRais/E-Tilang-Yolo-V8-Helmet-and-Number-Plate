@@ -1,13 +1,27 @@
 from flask import Flask, request
 from flask_restful import Resource, Api, abort, reqparse
 from google.cloud import firestore
-
+import pyrebase
 
 # Project ID is determined by the GCLOUD_PROJECT environment variable
 db = firestore.Client()
 app = Flask(__name__)
 api = Api(app)
 
+
+firebaseconfig = {
+  "apiKey": "AIzaSyCOR837pETLv0ea-VQFTmqdOOcCgqpGb8s",
+  "authDomain": "flaskexp-45c90.firebaseapp.com",
+  "databaseURL": "https://flaskexp-45c90.firebaseio.com",
+  "projectId": "flaskexp-45c90",
+  "storageBucket": "flaskexp-45c90.appspot.com",
+  "messagingSenderId": "1083645712266",
+  "appId": "1:1083645712266:web:ef9a25146c2c51e2ea9a73",
+  "measurementId" : "G-7BXE8B3S59"
+}
+
+firebase = pyrebase.initialize_app(firebaseconfig)
+storage = firebase.storage()
 
 def abort_if_task_doesnt_exist(task_id):
     tasks_ref = db.collection('ETLE')

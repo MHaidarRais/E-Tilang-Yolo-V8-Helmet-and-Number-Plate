@@ -7,17 +7,18 @@ import os
 import cv2
 from datetime import datetime
 import requests
-import json
 import math
 import easyocr
 from ultralytics import YOLO
 from flask_socketio import SocketIO, emit
-from firebaselib import db, TaskList, TaskListById, Task
+from firebaselib import db, TaskList, TaskListById, Task, storage
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'ayush'
 app.config['UPLOAD_FOLDER'] = 'static/files'
 socketio = SocketIO(app)
+
+
 
 # Ensure the upload folder exists
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
@@ -132,7 +133,7 @@ def video_detection(path_x):
                             now = datetime.now()
                             lat, long, city, state = locationCoordinates()
                             current_time = now.strftime("%d-%m-%Y %H-%M-%S")
-                            filename = f"Violation - {current_time}-{city,state}-{lat,long}.jpg"
+                            filename = f"{current_time}.jpg"
                             
                             date_info = {
                                 "day": now.day,
@@ -158,6 +159,8 @@ def video_detection(path_x):
                             save_violation_data_to_firestore(date_info, time_info, f"{city}, {state}", lat, long)
 
                             img = cv2.imread(image_path)
+
+                            storage.child(img).put(img)
 
                             if img is None:
                                 raise ValueError("Error loading the image. Please check the file path.") 
