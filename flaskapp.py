@@ -18,8 +18,6 @@ app.config['SECRET_KEY'] = 'ayush'
 app.config['UPLOAD_FOLDER'] = 'static/files'
 socketio = SocketIO(app)
 
-
-
 # Ensure the upload folder exists
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
@@ -105,9 +103,6 @@ def video_detection(path_x):
         for r in results:
             boxes = r.boxes
             for box in boxes:
-                check, frame = cap.read()
-                if not check:
-                    continue
                 x1, y1, x2, y2 = box.xyxy[0]
                 x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
                 conf = math.ceil((box.conf[0] * 100)) / 100
@@ -147,30 +142,25 @@ def video_detection(path_x):
                                 "second": now.second
                             }
 
-                            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 3)
-                            cv2.rectangle(frame, (x1, y1), c2, color, -1, cv2.LINE_AA)
-                            cv2.putText(frame, label, (x1, y1 - 2), 0, 1, [255, 255, 255], thickness=1, lineType=cv2.LINE_AA)
-                            
-                            cv2.imwrite(os.path.join(saveimgdir, filename), img=frame)
+                            cv2.rectangle(img, (x1, y1), (x2, y2), color, 3)
+                            cv2.rectangle(img, (x1, y1), c2, color, -1, cv2.LINE_AA)
+                            cv2.putText(img, label, (x1, y1 - 2), 0, 1, [255, 255, 255], thickness=1, lineType=cv2.LINE_AA)
+                            cv2.imwrite(os.path.join(saveimgdir, filename), img=img)
 
-                            image_path = os.path.join(saveimgdir, filename)
-
-                            # save_violation_data_to_firestore(image_path, date_info, time_info, f"{city}, {state}", lat, long)
                             save_violation_data_to_firestore(date_info, time_info, f"{city}, {state}", lat, long)
 
-                            img = cv2.imread(image_path)
-
-                            storage.child(img).put(img)
+                            storage_path = f"ViolationCaptured/{filename}"
+                            storage.child(storage_path).put(os.path.join(saveimgdir, filename))
 
                             if img is None:
                                 raise ValueError("Error loading the image. Please check the file path.") 
-                            
-                            # # Perform text detection
+
+                            # Perform text detection
                             # text_detections = reader.readtext(img)
                             # threshold = 0.2
 
-                            # Detect and save text
-                            # detect_and_save_text(image_path, text_detections, threshold)
+                            # # Detect and save text
+                            # detect_and_save_text(os.path.join(saveimgdir, filename), text_detections, threshold)
 
         frame_count += 1
         progress = int((frame_count / total_frames) * 100)

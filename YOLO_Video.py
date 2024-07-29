@@ -7,7 +7,7 @@ import os
 import easyocr
 import requests
 import json
-from firebaselib import db, TaskList, TaskListById, Task
+from firebaselib import db, TaskList, TaskListById, Task, storage
 
 app = Flask(__name__)
 
@@ -83,7 +83,6 @@ def save_violation_data(image_path, date_info, time_info, location, latitude, lo
         json.dump(data, file, indent=4)
 
 def is_inside_or_near(bbox1, bbox2, margin=20):
-    # bbox format: [x1, y1, x2, y2]
     x1_1, y1_1, x2_1, y2_1 = bbox1
     x1_2, y1_2, x2_2, y2_2 = bbox2
     
@@ -165,21 +164,17 @@ def video_detection(camera_index):
                             
                             cv2.imwrite(os.path.join(saveimgdir, filename), img=frame)
 
-                            image_path = os.path.join(saveimgdir, filename)
-
-                            # save_violation_data_to_firestore(image_path, date_info, time_info, f"{city}, {state}", lat, long)
                             save_violation_data_to_firestore(date_info, time_info, f"{city}, {state}", lat, long)
 
-                            img = cv2.imread(image_path)
+                            storage_path = f"ViolationCaptured/{filename}"
+                            storage.child(storage_path).put(os.path.join(saveimgdir, filename))
 
                             if img is None:
                                 raise ValueError("Error loading the image. Please check the file path.") 
-                            
-                            # # Perform text detection
+
+                            # Perform text detection (if needed)
                             # text_detections = reader.readtext(img)
                             # threshold = 0.2
-
-                            # Detect and save text
                             # detect_and_save_text(image_path, text_detections, threshold)
 
         yield img
