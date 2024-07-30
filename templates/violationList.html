@@ -38,7 +38,7 @@
           <img src="/static/no-image-available.png" class="card-img-top" alt="No Image Available">
           {% endif %}
           <div class="card-body">
-            <h5 class="card-title">Violation {{ loop.index }}</h5>
+            <p class="card-title">Violation {{ loop.index }}</p>
             <p class="card-text">Date: {{ violation.day }}-{{ violation.month }}-{{ violation.year }}</p>
             <button type="button" class="btn btn-primary" data-bs-toggle="modal"
               data-bs-target="#violationModal{{ loop.index }}">
@@ -54,7 +54,7 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">Violation Details</h5>
+              <p class="modal-title">Violation Details</p>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
