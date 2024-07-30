@@ -27,12 +27,16 @@
   <div class="container">
     <h1>Violation Details</h1>
     <div class="card">
+      {% if violation.image %}
       <img src="{{ violation.image }}" class="card-img-top" alt="Violation Image">
+      {% else %}
+      <img src="/static/no-image-available.png" class="card-img-top" alt="No Image Available">
+      {% endif %}
       <div class="card-body">
         <h5 class="card-title">Violation Information</h5>
-        <p class="card-text">Date: {{ violation.date }}</p>
-        <p class="card-text">Time: {{ violation.time }}</p>
-        <p class="card-text">Location: {{ violation.location }}</p>
+        <p class="card-text">Date: {{ violation.day }}-{{ violation.month }}-{{ violation.year }}</p>
+        <p class="card-text">Time: {{ violation.hour }}:{{ violation.minute }}:{{ violation.second }}</p>
+        <p class="card-text">Location: {{ violation.city }}, {{ violation.state }}</p>
         <!-- Add more details as needed -->
       </div>
     </div>

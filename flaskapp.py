@@ -12,6 +12,7 @@ import easyocr
 from ultralytics import YOLO
 from flask_socketio import SocketIO, emit
 from firebaselib import db, TaskList, TaskListById, Task, storage
+from violationlist import violations_bp  # Import the Blueprint
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'ayush'
@@ -221,23 +222,6 @@ def webapp():
 def progress():
     return render_template('progress.html')
 
-@app.route('/violations')
-def violations():
-    violations_ref = db.collection('ETLE')
-    violations = [violation.to_dict() for violation in violations_ref.stream()]
-    return render_template('violationList.html', violations=violations)
-
-@app.route('/violation/<int:index>')
-def violation_details(index):
-    violations_ref = db.collection('ETLE')
-    violations = [violation.to_dict() for violation in violations_ref.stream()]
-    
-    if index < 0 or index >= len(violations):
-        return "Invalid violation index."
-    
-    violation = violations[index]
-    return render_template('violation_details.html', violation=violation)
-
 @socketio.on('connect')
 def test_connect():
     print('Client connected')
@@ -245,6 +229,9 @@ def test_connect():
 @socketio.on('disconnect')
 def test_disconnect():
     print('Client disconnected')
+
+# Register the violations Blueprint
+app.register_blueprint(violations_bp)
 
 if __name__ == "__main__":
     socketio.run(app, debug=True)
