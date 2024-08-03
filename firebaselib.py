@@ -41,10 +41,11 @@ parser.add_argument('city')
 parser.add_argument('state')
 parser.add_argument('lat')
 parser.add_argument('long')
+parser.add_argument('number_plate')
 
 
 class Task(object):
-    def __init__(self, day, month, year, hour, minute, second, city, state, lat, long):
+    def __init__(self, day, month, year, hour, minute, second, city, state, lat, long, number_plate):
         self.day = day
         self.month = month
         self.year = year
@@ -55,6 +56,7 @@ class Task(object):
         self.state = state
         self.lat = lat
         self.long = long
+        self.number_plate = number_plate
 
     def to_dict(self):
         task = {
@@ -67,13 +69,14 @@ class Task(object):
             'city': self.city,
             'state': self.state,
             'lat': self.lat,
-            'long': self.long
+            'long': self.long,
+            'number_plate': self.number_plate
         }
         return task
 
     def __repr__(self):
-        return 'ETLE(day={}, month={}, year={}, hour={}, minute={}, second={}, city={}, state={}, lat={}, long={})'.format(
-            self.day, self.month, self.year, self.hour, self.minute, self.second, self.city, self.state, self.lat, self.long)
+        return 'ETLE(day={}, month={}, year={}, hour={}, minute={}, second={}, city={}, state={}, lat={}, long={}, number_plate={})'.format(
+            self.day, self.month, self.year, self.hour, self.minute, self.second, self.city, self.state, self.lat, self.long, self.number_plate)
 
 
 class TaskList(Resource):
@@ -87,7 +90,7 @@ class TaskList(Resource):
 
     def post(self):
         args = parser.parse_args()
-        task = Task(day=args['day'], month=args['month'], year=args['year'], hour=args['hour'], minute=args['minute'], second=args['second'], city=args['city'], state=args['state'], lat=args['lat'], long=args['long'])
+        task = Task(day=args['day'], month=args['month'], year=args['year'], hour=args['hour'], minute=args['minute'], second=args['second'], city=args['city'], state=args['state'], lat=args['lat'], long=args['long'],number_plate=args['number_plate'])
         db.collection('ETLE').add(task.to_dict())
         return task.to_dict(), 201
 
@@ -112,7 +115,8 @@ class TaskListById(Resource):
             "city": args['city'],
             "state": args['state'],
             "lat": args['lat'],
-            "long": args['long']
+            "long": args['long'],
+            "number_plate": args['number_plate']
         })
         return True, 201
 

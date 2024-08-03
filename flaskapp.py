@@ -40,7 +40,7 @@ def locationCoordinates():
         print("Error fetching location:", str(e))
         return None, None, None, None
 
-def save_violation_data_to_firestore(date_info, time_info, location, latitude, longitude):
+def save_violation_data_to_firestore(date_info, time_info, location, latitude, longitude, number_plate):
     task = Task(
         day=date_info['day'],
         month=date_info['month'],
@@ -51,7 +51,8 @@ def save_violation_data_to_firestore(date_info, time_info, location, latitude, l
         city=location.split(", ")[0],
         state=location.split(", ")[1],
         lat=latitude,
-        long=longitude
+        long=longitude,
+        number_plate=number_plate
     )
     db.collection('ETLE').add(task.to_dict())
 
@@ -65,17 +66,23 @@ def is_inside_or_near(bbox1, bbox2, margin=20):
         return True
     return False
 
-def detect_and_save_text(image_path, detections, threshold=0.2):
-    detected_texts = []
-    for bbox, text, score in detections:
-        if score > threshold:
-            detected_texts.append(text)
+def detect_and_save_text(image, bbox, timestamp):
+    x1, y1, x2, y2 = bbox
+    cropped_img = image[y1:y2, x1:x2]
+    reader = easyocr.Reader(['en'], gpu=False)
+    text_detections = reader.readtext(cropped_img)
     
-    if detected_texts:
-        txt_filename = os.path.splitext(image_path)[0] + ".txt"
-        with open(txt_filename, 'w') as file:
-            for text in detected_texts:
-                file.write(f"{text}\n")
+    detected_texts = [text[1] for text in text_detections]
+    number_plate_text = detected_texts[0] if detected_texts else 'undetected'
+
+    if not os.path.exists('NumberPlateCaptured'):
+        os.makedirs('NumberPlateCaptured')
+
+    number_plate_filename = f"numberplate_{timestamp}.jpg"
+    cv2.imwrite(os.path.join('NumberPlateCaptured', number_plate_filename), cropped_img)
+
+    return number_plate_text, number_plate_filename
+
 
 def video_detection(path_x):
     cap = cv2.VideoCapture(path_x)
@@ -91,7 +98,6 @@ def video_detection(path_x):
     model = YOLO("D:\\Code And Stuff\\TA CODE THINGY\\WEBAPP-DETECTION\\YOLOV8N-V9.pt")
     classNames = ['number plate', 'rider', 'with helmet', 'without helmet']
     
-    reader = easyocr.Reader(['en'], gpu=False)
     frame_count = 0
     
     while True:
@@ -101,6 +107,8 @@ def video_detection(path_x):
         
         results = model(img, stream=True)
         rider_bbox = None
+        number_plate_bbox = None
+        
         for r in results:
             boxes = r.boxes
             for box in boxes:
@@ -128,8 +136,8 @@ def video_detection(path_x):
                         if is_inside_or_near(rider_bbox, without_helmet_bbox):
                             now = datetime.now()
                             lat, long, city, state = locationCoordinates()
-                            current_time = now.strftime("%d-%m-%Y %H-%M-%S")
-                            filename = f"{current_time}.jpg"
+                            timestamp = now.strftime("%d-%m-%Y %H-%M-%S")
+                            filename = f"{timestamp}.jpg"
                             
                             date_info = {
                                 "day": now.day,
@@ -142,26 +150,27 @@ def video_detection(path_x):
                                 "minute": now.minute,
                                 "second": now.second
                             }
+                            
+                            for box2 in boxes:
+                                if classNames[int(box2.cls[0])] == 'number plate':
+                                    number_plate_bbox = [int(box2.xyxy[0][0]), int(box2.xyxy[0][1]), int(box2.xyxy[0][2]), int(box2.xyxy[0][3])]
+                                    break
 
-                            cv2.rectangle(img, (x1, y1), (x2, y2), color, 3)
-                            cv2.rectangle(img, (x1, y1), c2, color, -1, cv2.LINE_AA)
-                            cv2.putText(img, label, (x1, y1 - 2), 0, 1, [255, 255, 255], thickness=1, lineType=cv2.LINE_AA)
+                            if number_plate_bbox:
+                                number_plate_text, number_plate_filename = detect_and_save_text(img, number_plate_bbox, timestamp)
+                            else:
+                                number_plate_text = 'undetected'
+                                number_plate_filename = None
+
+                            save_violation_data_to_firestore(date_info, time_info, f"{city}, {state}", lat, long, number_plate_text)
+
                             cv2.imwrite(os.path.join(saveimgdir, filename), img=img)
-
-                            save_violation_data_to_firestore(date_info, time_info, f"{city}, {state}", lat, long)
-
                             storage_path = f"ViolationCaptured/{filename}"
                             storage.child(storage_path).put(os.path.join(saveimgdir, filename))
 
-                            if img is None:
-                                raise ValueError("Error loading the image. Please check the file path.") 
-
-                            # Perform text detection
-                            # text_detections = reader.readtext(img)
-                            # threshold = 0.2
-
-                            # # Detect and save text
-                            # detect_and_save_text(os.path.join(saveimgdir, filename), text_detections, threshold)
+                            if number_plate_filename:
+                                NPstorage_path = f"NumberPlateCaptured/{number_plate_filename}"
+                                storage.child(NPstorage_path).put(os.path.join('NumberPlateCaptured', number_plate_filename))
 
         frame_count += 1
         progress = int((frame_count / total_frames) * 100)
@@ -170,6 +179,7 @@ def video_detection(path_x):
 
     cap.release()
     cv2.destroyAllWindows()
+
 
 def generate_frames(path_x):
     yolo_output = video_detection(path_x)
