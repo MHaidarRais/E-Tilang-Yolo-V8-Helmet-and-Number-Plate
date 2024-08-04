@@ -66,7 +66,12 @@
               <p>Date: {{ violation.day }}-{{ violation.month }}-{{ violation.year }}</p>
               <p>Time: {{ violation.hour }}:{{ violation.minute }}:{{ violation.second }}</p>
               <p>Location: {{ violation.city }}, {{ violation.state }}</p>
-              <!-- Add more details as needed -->
+              <p class="card-text">Number Plate: {{ violation.number_plate }}</p>
+              {% if violation.number_plate_image %}
+              <img src="{{ violation.number_plate_image }}" class="card-img-top" alt="Number Plate Image">
+              {% else %}
+              <img src="/static/no-image-available.png" class="card-img-top" alt="No Image Available">
+              {% endif %}
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

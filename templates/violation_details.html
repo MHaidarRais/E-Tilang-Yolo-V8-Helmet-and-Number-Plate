@@ -27,8 +27,8 @@
   <div class="container">
     <h1>Violation Details</h1>
     <div class="card">
-      {% if violation.image %}
-      <img src="{{ violation.image }}" class="card-img-top" alt="Violation Image">
+      {% if violation.violation_image %}
+      <img src="{{ violation.violation_image }}" class="card-img-top" alt="Violation Image">
       {% else %}
       <img src="/static/no-image-available.png" class="card-img-top" alt="No Image Available">
       {% endif %}
@@ -37,7 +37,12 @@
         <p class="card-text">Date: {{ violation.day }}-{{ violation.month }}-{{ violation.year }}</p>
         <p class="card-text">Time: {{ violation.hour }}:{{ violation.minute }}:{{ violation.second }}</p>
         <p class="card-text">Location: {{ violation.city }}, {{ violation.state }}</p>
-        <!-- Add more details as needed -->
+        <p class="card-text">Number Plate: {{ violation.number_plate }}</p>
+        {% if violation.number_plate_image %}
+        <img src="{{ violation.number_plate_image }}" class="card-img-top" alt="Number Plate Image">
+        {% else %}
+        <img src="/static/no-image-available.png" class="card-img-top" alt="No Image Available">
+        {% endif %}
       </div>
     </div>
   </div>

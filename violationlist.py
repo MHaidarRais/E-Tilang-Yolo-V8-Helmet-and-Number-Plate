@@ -18,12 +18,23 @@ def violations():
         minute = int(violation['minute'])
         second = int(violation['second'])
         date_str = f"{day:02d}-{month:02d}-{year:04d} {hour:02d}-{minute:02d}-{second:02d}"
-        filename = f"{date_str}.jpg"
+        violation_filename = f"{date_str}.jpg"
+        numberplate_filename = f"numberplate_{date_str}.jpg"
         try:
-            image_url = storage.child(f"ViolationCaptured/{filename}").get_url(None)
+            image_url = storage.child(f"ViolationCaptured/{violation_filename}").get_url(None)
             violation['image'] = image_url
         except:
             violation['image'] = None
+        try:
+            numberplate_image_url = storage.child(f"NumberPlateCaptured/{numberplate_filename}").get_url(None)
+            print(f"Number Plate Image URL for {numberplate_filename}: {numberplate_image_url}")  # Debugging print
+            violation['number_plate_image'] = numberplate_image_url
+        except Exception as e:
+            print(f"Error fetching number plate image for {numberplate_filename}: {e}")  # Debugging print
+            violation['number_plate_image'] = None
+        
+        # Add detected number plate information
+        violation['number_plate'] = violation.get('number_plate', 'N/A')  # Assuming 'number_plate' field exists
     
     return render_template('violationList.html', violations=violations)
 
@@ -43,11 +54,22 @@ def violation_details(index):
     minute = int(violation['minute'])
     second = int(violation['second'])
     date_str = f"{day:02d}-{month:02d}-{year:04d} {hour:02d}-{minute:02d}-{second:02d}"
-    filename = f"{date_str}.jpg"
+    violation['number_plate'] = violation.get('number_plate', 'N/A')
+    violation_filename = f"{date_str}.jpg"
+    numberplate_filename = f"numberplate_{date_str}.jpg"
     try:
-        image_url = storage.child(f"ViolationCaptured/{filename}").get_url(None)
+        image_url = storage.child(f"ViolationCaptured/{violation_filename}").get_url(None)
         violation['image'] = image_url
     except:
         violation['image'] = None
+    
+    try:
+            numberplate_image_url = storage.child(f"NumberPlateCaptured/{numberplate_filename}").get_url(None)
+            print(f"Number Plate Image URL for {numberplate_filename}: {numberplate_image_url}")  # Debugging print
+            violation['number_plate_image'] = numberplate_image_url
+    except Exception as e:
+            print(f"Error fetching number plate image for {numberplate_filename}: {e}")  # Debugging print
+            violation['number_plate_image'] = None
+    
     
     return render_template('violation_details.html', violation=violation)
