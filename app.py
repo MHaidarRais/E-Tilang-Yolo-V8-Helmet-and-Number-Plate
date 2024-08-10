@@ -4,6 +4,7 @@ from wtforms import FileField, SubmitField
 from werkzeug.utils import secure_filename
 from wtforms.validators import InputRequired
 import os
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "etle-430610-0fa520000bc7.json"
 import cv2
 from datetime import datetime
 import requests
