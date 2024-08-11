@@ -1,87 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
-    />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Webcam | E-Tilang</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
-      body {
-        color: rgb(255, 255, 255);
-        background-size: cover; /* Mengatur gambar agar menutupi seluruh latar belakang /
-        background-repeat: no-repeat;
-        margin: 0px;
-        / font-family: 'Times New Roman', Times, serif; */
-        font-family: 'Arial';
-        text-align: justify;
-        padding: 0px;
-      }
-      header.feature-box.top {
-        background-color: black;
-        height: 60px;
-        padding-top: 10px;
-        padding-bottom: 10px;
-        text-align: center;
-      }
-      header.feature-box.second {
-        background-color: blue;
-        height: 50px;
-        text-align: center;
-        margin-top: -25px;
-      }
-      .features {
-        background-color: black;
-        width: 900px;
-        height: 700px;
-        border-radius: 35px;
-        object-fit: contain;
-        margin: 20px;
-      }
-      section.col-sm {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 200vb;
-        height: 80vh;
-        border-radius: 15px;
-        object-fit: contain;
-      }
-      img {
-        width: 800px;
-        height: 600px;
-        border-radius: 35px;
-        object-fit: contain;
-        margin: 40px;
-      }
-
-      .new {
-        color: black;
-        margin: 0px;
-        padding: 10px;
-        background-color: green;
-        margin: 0px;
-        margin-top: -10px;
-      }
-
-      .back-button {
-            float: left;
-            margin-left: 20px;
-            color: white;
-            font-family: 'Arial';
-        }
-
+        /* Your existing CSS styles here */
     </style>
-  </head>
-  <body>
+</head>
+<body>
     <header class="feature-box top">
         <a href="/home" class="back-button">&larr; Back</a>
         <h1><strong>Helmet Detection Using Webcam</strong></h1>
     </header>
     <section class="col-sm">
-      <img src="{{ url_for('webapp') }}" alt="Web Cam Not Detected" />
+        <video id="video" width="640" height="480" autoplay></video>
+        <select id="camera-select"></select>
+        <button id="start-camera">Start Camera</button>
+        <button id="stop-camera">Stop Camera</button>
+        
     </section>
+
+    <script>
+        var socket = io();
+        var img = document.getElementById('video-stream');
+        var video = document.getElementById('video');
+        var cameraSelect = document.getElementById('camera-select');
+        var startButton = document.getElementById('start-camera');
+        var stopButton = document.getElementById('stop-camera');
+        let stream;
+        let selectedCameraId;
+
+        // Get a list of available camera devices
+        navigator.mediaDevices.enumerateDevices()
+            .then(devices => {
+                devices.forEach(device => {
+                    if (device.kind === 'videoinput') {
+                        const option = document.createElement('option');
+                        option.value = device.deviceId;
+                        option.text = device.label;
+                        cameraSelect.appendChild(option);
+                    }
+                });
+            })
+            .catch(err => console.error('Error enumerating devices:', err));
+
+        startButton.addEventListener('click', async () => {
+            try {
+                selectedCameraId = cameraSelect.value;
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        deviceId: selectedCameraId
+                    }
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error('Error accessing the camera:', err);
+            }
+        });
+
+        stopButton.addEventListener('click', () => {
+            if (stream) {
+                const tracks = stream.getTracks();
+                tracks.forEach(track => track.stop());
+                video.srcObject = null;
+            }
+        });
+
+        socket.on('connect', function() {
+            console.log('Connected to server');
+        });
+
+        socket.on('video_frame', function(data) {
+            img.src = 'data:image/jpeg;base64,' + data.frame;
+        });
+    </script>
 </body>
 </html>
