@@ -6,7 +6,16 @@
     <title>Webcam | E-Tilang</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
-        /* Your existing CSS styles here */
+        #videoElement {
+            width: 100%;
+            height: auto;
+        }
+        #canvasElement {
+            display: block; /* Ensure the canvas is visible */
+        }
+        #processedImage {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -15,22 +24,26 @@
         <h1><strong>Helmet Detection Using Webcam</strong></h1>
     </header>
     <section class="col-sm">
-        <video id="video" width="640" height="480" autoplay></video>
+        <video id="videoElement" width="640" height="480" autoplay></video>
+        <canvas id="canvasElement"></canvas>
+        <img id="processedImage" style="display: none;">
         <select id="camera-select"></select>
         <button id="start-camera">Start Camera</button>
         <button id="stop-camera">Stop Camera</button>
-        
     </section>
-
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script>
         var socket = io();
-        var img = document.getElementById('video-stream');
-        var video = document.getElementById('video');
-        var cameraSelect = document.getElementById('camera-select');
-        var startButton = document.getElementById('start-camera');
-        var stopButton = document.getElementById('stop-camera');
         let stream;
         let selectedCameraId;
+        let lastSpokenObjects = new Set();
+
+        const videoElement = document.getElementById('videoElement');
+        const canvasElement = document.getElementById('canvasElement');
+        const ctx = canvasElement.getContext('2d');
+        const cameraSelect = document.getElementById('camera-select');
+        const startButton = document.getElementById('start-camera');
+        const stopButton = document.getElementById('stop-camera');
 
         // Get a list of available camera devices
         navigator.mediaDevices.enumerateDevices()
@@ -54,7 +67,8 @@
                         deviceId: selectedCameraId
                     }
                 });
-                video.srcObject = stream;
+                videoElement.srcObject = stream;
+                detectAndDraw();
             } catch (err) {
                 console.error('Error accessing the camera:', err);
             }
@@ -64,15 +78,75 @@
             if (stream) {
                 const tracks = stream.getTracks();
                 tracks.forEach(track => track.stop());
-                video.srcObject = null;
+                videoElement.srcObject = null;
             }
         });
+
+        async function detectAndDraw() {
+            const targetWidth = 640;
+            const targetHeight = 480;
+            canvasElement.width = targetWidth;
+            canvasElement.height = targetHeight;
+
+            ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+            const imageData = canvasElement.toDataURL('image/jpeg', 0.5);
+
+            async function detectAndDraw() {
+    const targetWidth = 640;
+    const targetHeight = 480;
+    canvasElement.width = targetWidth;
+    canvasElement.height = targetHeight;
+
+    ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+    const imageData = canvasElement.toDataURL('image/jpeg', 0.5);
+
+    $.ajax({
+        type: 'POST',
+        url: '/start_detection',
+        data: { image_data: imageData },
+        success: function(response) {
+            const processedImage = new Image();
+            processedImage.src = 'data:image/jpeg;base64,' + response.image_data;
+            processedImage.onload = function() {
+                ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+                ctx.drawImage(processedImage, 0, 0, canvasElement.width, canvasElement.height);
+
+                response.bounding_boxes.forEach((box) => {
+                    ctx.strokeStyle = 'red';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1);
+                    ctx.font = '18px Arial';
+                    ctx.fillStyle = 'red';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(box.class, box.x1, box.y1 - 10);
+                });
+            };
+        },
+        error: function(xhr, status, error) {
+            console.error('Error:', error);
+        }
+    });
+
+    if (stream) {
+        setTimeout(detectAndDraw, 500);
+    }
+            }}
+
+        function areSetsEqual(set1, set2) {
+            if (set1.size !== set2.size) return false;
+            for (let item of set1) {
+                if (!set2.has(item)) return false;
+            }
+            return true;
+        }
 
         socket.on('connect', function() {
             console.log('Connected to server');
         });
 
         socket.on('video_frame', function(data) {
+            const img = document.getElementById('processedImage');
             img.src = 'data:image/jpeg;base64,' + data.frame;
         });
     </script>

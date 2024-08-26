@@ -16,7 +16,7 @@ from firebaselib import db, TaskList, TaskListById, Task, storage
 from violationlist import violations_bp  # Import the Blueprint
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'ayush'
+app.config['SECRET_KEY'] = 'tusik'
 app.config['UPLOAD_FOLDER'] = 'static/files'
 socketio = SocketIO(app)
 
